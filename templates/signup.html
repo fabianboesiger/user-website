@@ -1,0 +1,21 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="sign-form">
+    <h2>Registrieren</h2>
+    <form method="POST">
+        <label for="username">Benutzername</label>
+        <input type="text" name="username" id="username">
+        <label for="password">Passwort</label>
+        <input type="password" name="password" id="password">
+        <label for="confirm-password">Passwort wiederholen</label>
+        <input type="password" name="confirm-password" id="confirm-password">
+        <input type="submit" value="Registrieren">
+    </form>
+    <ul>
+    {% for flash in flashes -%}
+        <li>{{ flash }}</li>
+    {% endfor -%}
+    </ul>
+</div>
+{% endblock %}

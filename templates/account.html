@@ -1,0 +1,20 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="sign-form">
+    <h2>Account</h2>
+    <form method="POST" action="/username">
+        <label for="username">Neuer Benutzername</label>
+        <input type="text" name="username" id="username">
+        <input type="submit" value="Benutzername ändern">
+    </form>
+    <form method="POST" action="/password">
+        <label for="password">Neues Passwort</label>
+        <input type="password" name="password" id="password">
+        <input type="submit" value="Passwort ändern">
+    </form>
+    <form method="POST" action="/signout">
+        <input type="submit" value="Ausloggen">
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,10 @@
+CREATE TABLE users (
+    username VARCHAR(32) PRIMARY KEY,
+    password VARCHAR(256) NOT NULL
+);
+
+CREATE TABLE sessions (
+    id VARCHAR(32) PRIMARY KEY,
+    username VARCHAR(32) REFERENCES users(username) DEFAULT NULL,
+    expires TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW() + INTERVAL '1 week'
+);

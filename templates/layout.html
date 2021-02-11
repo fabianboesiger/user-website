@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="de">
+    <head>
+        <title>Title</title>
+        <link rel="stylesheet" href="/style.css">
+    </head>
+    <body>
+        <nav>
+            <a href="/">Home</a>
+            {%- if signed_in -%}
+            <a href="/account">Account</a>
+            {%- else -%}
+            <a href="/signup">Registrieren</a>
+            <a href="/signin">Login</a>
+            {%- endif -%}
+        </nav>
+        <main>
+            {% block content %}{% endblock %}
+        </main>
+    </body>
+</html>
