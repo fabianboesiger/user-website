@@ -16,3 +16,7 @@ input {
     max-width: 384px;
     margin: auto;
 }
+
+.errors {
+    color: red;
+}
