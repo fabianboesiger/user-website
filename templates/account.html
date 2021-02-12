@@ -27,7 +27,7 @@
         <input type="password" name="password" id="password">
         <input type="submit" value="Account löschen">
     </form>
-    <ul>
+    <ul class="errors">
     {% for flash in flashes -%}
         <li>{{ flash }}</li>
     {% endfor -%}
