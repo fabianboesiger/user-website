@@ -3,18 +3,34 @@
 {% block content %}
 <div class="sign-form">
     <h2>Account</h2>
-    <form method="POST" action="/username">
+    <h3>Benutzername ändern</h3>
+    <form method="POST" action="/account/username">
         <label for="username">Neuer Benutzername</label>
-        <input type="text" name="username" id="username">
+        <input type="text" name="username" value="{{ username }}" id="username">
         <input type="submit" value="Benutzername ändern">
     </form>
-    <form method="POST" action="/password">
+    <h3>Passwort ändern</h3>
+    <form method="POST" action="/account/password">
         <label for="password">Neues Passwort</label>
         <input type="password" name="password" id="password">
+        <label for="confirm-password">Neues Passwort wiederholen</label>
+        <input type="password" name="confirm-password" id="confirm-password">
         <input type="submit" value="Passwort ändern">
     </form>
+    <h3>Abmelden</h3>
     <form method="POST" action="/signout">
-        <input type="submit" value="Ausloggen">
+        <input type="submit" value="Abmelden">
     </form>
+    <h3>Account löschen</h3>
+    <form method="POST" action="/account/delete">
+        <label for="password">Passwort zur Bestätigung</label>
+        <input type="password" name="password" id="password">
+        <input type="submit" value="Account löschen">
+    </form>
+    <ul>
+    {% for flash in flashes -%}
+        <li>{{ flash }}</li>
+    {% endfor -%}
+    </ul>
 </div>
 {% endblock %}

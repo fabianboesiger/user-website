@@ -1,5 +1,15 @@
 use crate::{
-    model::{update_session, with_session, Flashes, Session, Layout, User},
+    combine,
+    model::{
+        session::{
+            update_session,
+            with_session,
+            Flashes,
+            Session,
+            Layout
+        },
+        user::{User, extract_username, extract_confirm_password},
+    },
     Error,
 };
 use askama::Template;
@@ -28,9 +38,12 @@ async fn get_signup(mut session: Session) -> Result<(impl Reply, Session), Rejec
 
 async fn post_signup(
     mut session: Session,
-    form: HashMap<String, String>,
+    mut form: HashMap<String, String>,
 ) -> Result<(impl Reply, Session), Rejection> {
-    if let Some(user) = session.add_flashes(User::from_signup_form(form)) {
+    if let Some(user) = session.add_flashes(combine!(User {
+        username: extract_username(&mut form),
+        password: extract_confirm_password(&mut form),
+    })) {
         if let Some(user) = session.add_flashes(user.signup().await?) {
             session.link_user(user).await?;
             return Ok((warp::redirect(Uri::from_static("/")), session));

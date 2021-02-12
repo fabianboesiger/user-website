@@ -1,5 +1,12 @@
 use crate::{
-    model::{update_session, with_session, Session, Layout},
+    model::{
+        session::{
+            update_session,
+            with_session,
+            Session,
+            Layout
+        },
+    },
     Error,
 };
 use askama::Template;

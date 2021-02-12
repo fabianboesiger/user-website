@@ -1,4 +1,4 @@
-use super::User;
+use super::user::User;
 use crate::{database::get_pool, error::Error};
 use chrono::{DateTime, Utc};
 use rand::distributions::Alphanumeric;
@@ -25,6 +25,10 @@ pub struct Session {
 }
 
 impl Session {
+    pub fn get_username(&self) -> Result<String, Error> {
+        self.cookie.username.as_ref().cloned().ok_or(Error::Unauthorized)
+    }
+
     pub fn get_layout(&self) -> Layout {
         self.layout
     }

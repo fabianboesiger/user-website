@@ -25,13 +25,7 @@ impl From<askama::Error> for Error {
 }
 
 impl Reject for Error {}
-/*
-impl Into<Rejection> for Error {
-    fn into(self) -> Rejection {
-        warp::reject::custom(self)
-    }
-}
-*/
+
 #[derive(Template)]
 #[template(path = "not_found.html")]
 struct NotFoundTemplate;
