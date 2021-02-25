@@ -1,2 +1,3 @@
+DROP TABLE states;
 DROP TABLE sessions;
 DROP TABLE users;

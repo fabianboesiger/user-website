@@ -17,6 +17,6 @@ input {
     margin: auto;
 }
 
-.map {
-    
+.errors {
+    color: red;
 }

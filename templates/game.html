@@ -1,0 +1,65 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<script>
+    window.addEventListener("DOMContentLoaded", () => {
+        const uri = "ws://" + location.host + "/game/ws";
+        const ws = new WebSocket(uri);
+
+        function send(json) {
+            ws.send(JSON.stringify(json));
+        }
+        
+        ws.onmessage = function(msg) {
+            console.log(msg.data);
+            let message = JSON.parse(msg.data);
+            updateScore(message);
+            updateScoreboard(message);
+        };
+        ws.onopen = function() {send("Init")};
+        //ws.onclose = function() {};
+
+        let incrementButton = document.getElementById("increment");
+        let scoreElem = document.getElementById("score");
+        let scoreboardElem = document.getElementById("scoreboard");
+        
+        incrementButton.addEventListener("click", () => {send("Increment")});
+
+        function updateScore(message) {
+            let score = message["UpdateScore"];
+            if (score != undefined) {
+                scoreElem.innerText = score;
+            }
+        }
+
+        function updateScoreboard(message) {
+            let scoreboard = message["UpdateScoreboard"];
+            if (scoreboard != undefined) {
+                scoreboardElem.innerHTML = "";
+                for (let entry of scoreboard) {
+                    let entryElem = document.createElement("tr");
+                    let usernameElem = document.createElement("td");
+                    usernameElem.innerText = entry["username"];
+                    let scoreElem = document.createElement("td");
+                    scoreElem.innerText = entry["score"];
+                    entryElem.appendChild(usernameElem);
+                    entryElem.appendChild(scoreElem);
+                    scoreboardElem.appendChild(entryElem);
+                }
+
+            }
+        }
+
+    });
+</script>
+
+<span id="score"></span>
+<button id="increment">+1</button>
+<table>
+    <thead>
+        <th>Benutzername</th>
+        <th>Passwort</th>
+    </thead>
+    <tbody id="scoreboard"></tbody>
+</table>
+{% endblock %}

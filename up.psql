@@ -1,10 +1,41 @@
 CREATE TABLE users (
-    username VARCHAR(32) PRIMARY KEY,
-    password VARCHAR(256) NOT NULL
+    username
+        VARCHAR(32)
+        UNIQUE
+        NOT NULL,
+    password
+        VARCHAR(256)
+        NOT NULL,
+    user_id
+        SERIAL
+        PRIMARY KEY
 );
 
 CREATE TABLE sessions (
-    id VARCHAR(32) PRIMARY KEY,
-    username VARCHAR(32) REFERENCES users(username) DEFAULT NULL,
-    expires TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW() + INTERVAL '1 week'
+    session_id 
+        VARCHAR(32)
+        PRIMARY KEY,
+    user_id
+        INTEGER 
+        REFERENCES users(user_id)
+        ON UPDATE CASCADE
+        ON DELETE SET DEFAULT
+        DEFAULT NULL,
+    expires
+        TIMESTAMP WITH TIME ZONE
+        NOT NULL
+        DEFAULT NOW() + INTERVAL '1 week'
+);
+
+CREATE TABLE states (
+    user_id
+        INTEGER 
+        REFERENCES users(user_id)
+        ON UPDATE CASCADE
+        ON DELETE SET DEFAULT
+        DEFAULT NULL,
+    score
+        INTEGER
+        DEFAULT 0
+        NOT NULL
 );

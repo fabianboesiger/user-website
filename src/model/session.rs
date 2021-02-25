@@ -1,14 +1,14 @@
-use super::User;
+use super::user::User;
 use crate::{database::get_pool, error::Error};
+use askama::Template;
 use chrono::{DateTime, Utc};
 use rand::distributions::Alphanumeric;
 use rand::{thread_rng, Rng};
 use std::{fmt::Display, iter};
+use urlencoding::{decode, encode};
 use warp::{
     http, reject, {Filter, Rejection, Reply},
 };
-use urlencoding::{encode, decode};
-use askama::Template;
 
 pub type Flashes = Vec<String>;
 
@@ -25,6 +25,26 @@ pub struct Session {
 }
 
 impl Session {
+    pub fn get_user_id(&self) -> Result<i32, Error> {
+        self.cookie
+            .user_id
+            .ok_or(Error::Unauthorized)
+    }
+
+    pub async fn get_user(&self) -> Result<User, Error> {
+        sqlx::query_as!(
+            User,
+            "SELECT username, password
+            FROM users
+            WHERE user_id = $1",
+            self.cookie.user_id
+        )
+        .fetch_all(get_pool())
+        .await?
+        .pop()
+        .ok_or(Error::Unauthorized)
+    }
+    
     pub fn get_layout(&self) -> Layout {
         self.layout
     }
@@ -46,22 +66,58 @@ impl Session {
     }
 
     pub async fn link_user(&mut self, user: User) -> Result<(), Error> {
-        self.cookie.username = Some(user.username);
-        self.update_user().await
+        sqlx::query!(
+            "UPDATE sessions
+            SET user_id = (
+                SELECT user_id
+                FROM users
+                WHERE username = $2
+            )
+            WHERE session_id = $1",
+            self.cookie.session_id,
+            user.username,
+        )
+        .execute(get_pool())
+        .await?;
+
+        Ok(())
     }
 
     pub async fn unlink_user(&mut self) -> Result<(), Error> {
-        self.cookie.username = None;
-        self.update_user().await
-    }
-
-    async fn update_user(&mut self) -> Result<(), Error> {
         sqlx::query!(
             "UPDATE sessions
+            SET user_id = NULL
+            WHERE session_id = $1",
+            self.cookie.session_id,
+        )
+        .execute(get_pool())
+        .await?;
+
+        Ok(())
+    }
+
+    
+    pub async fn update_username(&self, username: String) -> Result<(), Error> {
+        sqlx::query!(
+            "UPDATE users
             SET username = $1
-            WHERE id = $2",
-            self.cookie.username,
-            self.cookie.id,
+            WHERE user_id = $2",
+            username,
+            self.cookie.user_id,
+        )
+        .execute(get_pool())
+        .await?;
+
+        Ok(())
+    }
+
+    pub async fn update_password(&self, password: String) -> Result<(), Error> {
+        sqlx::query!(
+            "UPDATE users
+            SET password = $1
+            WHERE user_id = $2",
+            super::user::hash(password).await,
+            self.cookie.user_id,
         )
         .execute(get_pool())
         .await?;
@@ -71,8 +127,8 @@ impl Session {
 }
 
 struct Cookie {
-    id: String,
-    username: Option<String>,
+    session_id: String,
+    user_id: Option<i32>,
     expires: DateTime<Utc>,
 }
 
@@ -92,7 +148,7 @@ impl Cookie {
                 Cookie,
                 "SELECT *
                 FROM sessions
-                WHERE id = $1
+                WHERE session_id = $1
                 AND expires > NOW()",
                 id
             )
@@ -104,13 +160,13 @@ impl Cookie {
         };
 
         let cookie = if let Some(cookie) = cookie {
-            log::info!("session {} connected", cookie.id);
+            log::info!("session {} connected", cookie.session_id);
 
             cookie
         } else {
             let cookie = sqlx::query_as!(
                 Cookie,
-                "INSERT INTO sessions (id)
+                "INSERT INTO sessions (session_id)
                 VALUES ($1)
                 RETURNING *",
                 Cookie::random_id(),
@@ -118,7 +174,7 @@ impl Cookie {
             .fetch_one(get_pool())
             .await?;
 
-            log::info!("new session {} created", cookie.id);
+            log::info!("new session {} created", cookie.session_id);
 
             cookie
         };
@@ -135,12 +191,18 @@ pub fn with_session() -> impl Filter<Extract = (Session,), Error = Rejection> + 
             match Cookie::from_id(id).await {
                 Ok(cookie) => Ok((Session {
                     layout: Layout {
-                        signed_in: cookie.username.is_some(),
+                        signed_in: cookie.user_id.is_some(),
                     },
                     cookie,
                     flashes: flashes
                         // TODO: Proper error handling.
-                        .map(|string| decode(&string).unwrap_or(String::new()).split('|').map(|flash| flash.to_owned()).collect())
+                        .map(|string| {
+                            decode(&string)
+                                .unwrap_or(String::new())
+                                .split('|')
+                                .map(|flash| flash.to_owned())
+                                .collect()
+                        })
                         .unwrap_or(Vec::new()),
                 },)),
                 Err(err) => Err(reject::custom(err)),
@@ -158,8 +220,14 @@ pub async fn update_session(
         http::header::SET_COOKIE,
         format!(
             "session-id={}; Path=/; Max-Age={}; HttpOnly",
-            session.cookie.id,
-            session.cookie.expires.signed_duration_since(Utc::now()).to_std().unwrap().as_secs(),
+            session.cookie.session_id,
+            session
+                .cookie
+                .expires
+                .signed_duration_since(Utc::now())
+                .to_std()
+                .unwrap()
+                .as_secs(),
         ),
     );
 
@@ -169,11 +237,7 @@ pub async fn update_session(
         format!(
             "flashes={}; Path=/; Max-Age={}; HttpOnly",
             encode(&session.flashes.join("|")),
-            if session.flashes.is_empty() {
-                0
-            } else {
-                60
-            }
+            if session.flashes.is_empty() { 0 } else { 60 }
         ),
     );
 
